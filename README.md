@@ -16,6 +16,12 @@ In a second terminal:
 npm run dev --workspace @pingpong/web
 ```
 
+Or use the local helper script to install dependencies and start both services:
+
+```bash
+npm run dev:local
+```
+
 Expected local URLs:
 
 - Frontend: `http://localhost:5173`
