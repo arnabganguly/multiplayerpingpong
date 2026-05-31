@@ -10,6 +10,7 @@ images:
     newTag: dev
 configMapGenerator:
   - name: pingpong-config
+    namespace: pingpong
     behavior: merge
     literals:
       - APP_ENV=dev
