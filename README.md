@@ -7,7 +7,13 @@ online play, and Azure Kubernetes Service deployment assets.
 
 ```bash
 npm install
-npm run dev
+SESSION_TOKEN_SIGNING_SECRET=local-dev-secret npm run dev --workspace @pingpong/realtime
+```
+
+In a second terminal:
+
+```bash
+npm run dev --workspace @pingpong/web
 ```
 
 Expected local URLs:
