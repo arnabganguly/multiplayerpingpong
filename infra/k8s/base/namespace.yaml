@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pingpong
+  labels:
+    app.kubernetes.io/name: pingpong
+    app.kubernetes.io/part-of: browser-ping-pong

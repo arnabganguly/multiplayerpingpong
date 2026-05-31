@@ -1,50 +1,122 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+Version change: unversioned template -> 1.0.0
+Modified principles:
+- Template Principle 1 -> I. Code Quality Is Mandatory
+- Template Principle 2 -> II. Tests Prove Behavior
+- Template Principle 3 -> III. User Experience Is Consistent
+- Template Principle 4 -> IV. Performance Budgets Are Requirements
+Added sections:
+- Quality Gates
+- Delivery Workflow
+Removed sections:
+- Placeholder Principle 5
+Templates requiring updates:
+- ✅ updated .specify/templates/plan-template.md
+- ✅ updated .specify/templates/spec-template.md
+- ✅ updated .specify/templates/tasks-template.md
+- ✅ updated .specify/templates/checklist-template.md
+- ✅ updated AGENTS.md
+- ✅ verified .specify/templates/commands/*.md absent
+Follow-up TODOs:
+- None
+-->
+# Pingpong Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Code Quality Is Mandatory
+All production code MUST be readable, cohesive, and aligned with the existing
+project structure. Every change MUST use the smallest clear design that solves
+the stated requirement, avoid unrelated refactors, and remove duplication when
+it creates maintenance risk. Linting, formatting, static checks, and code review
+MUST pass before delivery. Public interfaces, complex logic, and non-obvious
+tradeoffs MUST be documented close to the code.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Rationale: predictable code is easier to review, test, extend, and recover when
+requirements change.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Tests Prove Behavior
+Every executable behavior change MUST include automated tests that verify the
+user-visible outcome or system contract. Unit tests MUST cover isolated rules
+and edge cases; integration, contract, or end-to-end tests MUST cover cross
+module behavior, persistence, external interfaces, and critical user journeys.
+Tests MUST be written or updated before implementation whenever the intended
+behavior is known, and they MUST fail for the missing or broken behavior before
+the fix is completed.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Rationale: tests are the repeatable evidence that a feature works and that
+future changes have not broken existing behavior.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. User Experience Is Consistent
+User-facing changes MUST follow established product patterns for layout,
+terminology, interaction states, accessibility, and visual hierarchy. New UI
+elements MUST include loading, empty, error, disabled, and success states when
+those states can occur. Workflows MUST preserve clear navigation and feedback,
+and accessibility requirements such as keyboard access, focus order, semantic
+labels, and sufficient contrast MUST be verified before release.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Rationale: consistent interfaces reduce user effort and prevent quality drift
+across features.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Performance Budgets Are Requirements
+Each feature MUST define measurable performance expectations in the specification
+or implementation plan before build work begins. The implementation MUST avoid
+unbounded work on user paths, unnecessary network or storage calls, avoidable
+large payloads, and layout or rendering work that threatens responsiveness.
+Performance-sensitive changes MUST include measurement, regression checks, or a
+documented benchmark showing the budget is met.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Rationale: performance failures are product failures when they block users from
+completing their work.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Quality Gates
+
+Every plan and review MUST explicitly verify these gates:
+
+- Code Quality: linting, formatting, type or static checks, and review criteria
+  are defined for the affected stack.
+- Testing Standards: required unit, integration, contract, end-to-end, or manual
+  checks are identified with a reason for any automated test gap.
+- User Experience Consistency: user-facing behavior follows existing patterns
+  and includes required accessibility and state coverage.
+- Performance Requirements: measurable budgets or justified non-applicability
+  are recorded before implementation.
+
+A gate violation MUST be documented in the implementation plan with the reason,
+the rejected simpler alternative, and the mitigation that will be completed
+before release.
+
+## Delivery Workflow
+
+Specifications MUST describe independently testable user outcomes, edge cases,
+UX requirements for user-facing work, and measurable performance requirements.
+Plans MUST select the project structure, testing approach, quality tooling, UX
+validation approach, and performance budget before task generation. Tasks MUST
+include quality, test, UX, and performance work in the relevant phase rather
+than leaving those concerns to final cleanup.
+
+Implementation MUST proceed in small, reviewable increments. Each completed
+increment MUST pass the planned quality gates and preserve previously delivered
+behavior before the next increment is accepted.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes conflicting workflow guidance for specifications,
+plans, tasks, reviews, and implementation. Amendments MUST include the reason
+for change, the affected principles or sections, any migration impact for active
+features, and updates to dependent templates or runtime guidance.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+Versioning follows semantic versioning:
+
+- MAJOR: backward-incompatible governance changes or removal/redefinition of a
+  core principle.
+- MINOR: new principles or sections, or materially expanded governance.
+- PATCH: clarifications, wording updates, or non-semantic refinements.
+
+All feature plans and reviews MUST include a Constitution Check. A reviewer or
+implementer MUST block delivery when a required gate lacks evidence or an
+approved mitigation. Compliance is reviewed at plan creation, after design, and
+before implementation is considered complete.
+
+**Version**: 1.0.0 | **Ratified**: 2026-05-30 | **Last Amended**: 2026-05-30

@@ -1,0 +1,18 @@
+namespace: pingpong
+resources:
+  - ../../base
+images:
+  - name: pingpong-web
+    newName: pingpong-web
+    newTag: staging
+  - name: pingpong-realtime
+    newName: pingpong-realtime
+    newTag: staging
+configMapGenerator:
+  - name: pingpong-config
+    behavior: merge
+    literals:
+      - APP_ENV=staging
+      - PUBLIC_BASE_URL=https://staging.pingpong.example.com
+      - PUBLIC_REALTIME_URL=wss://staging.pingpong.example.com/ws
+      - ALLOWED_ORIGINS=https://staging.pingpong.example.com

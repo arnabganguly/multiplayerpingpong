@@ -1,0 +1,23 @@
+{
+  "name": "@pingpong/realtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -b",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@fastify/websocket": "^11.0.0",
+    "@pingpong/contracts": "0.1.0",
+    "@pingpong/game-core": "0.1.0",
+    "fastify": "^5.8.5",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

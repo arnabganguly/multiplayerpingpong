@@ -1,0 +1,7 @@
+resources:
+  - namespace.yaml
+  - config.yaml
+  - web.yaml
+  - realtime.yaml
+  - ingress.yaml
+  - hpa.yaml

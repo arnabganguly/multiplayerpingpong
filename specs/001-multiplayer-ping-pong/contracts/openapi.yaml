@@ -1,0 +1,275 @@
+openapi: 3.1.0
+info:
+  title: Multiplayer Ping Pong Session API
+  version: 1.0.0
+  description: HTTP contract for health checks and online session management.
+servers:
+  - url: https://{host}/api
+    variables:
+      host:
+        default: pingpong.example.com
+paths:
+  /health/live:
+    get:
+      summary: Liveness check
+      operationId: getLiveness
+      responses:
+        "200":
+          description: Process is running
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /health/ready:
+    get:
+      summary: Readiness check
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Service can accept traffic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: Service is starting, draining, or not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /sessions:
+    post:
+      summary: Create an invite-only online session
+      operationId: createSession
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateSessionResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Session capacity unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /sessions/{sessionId}:
+    get:
+      summary: Inspect limited joinable session metadata
+      operationId: getSessionMetadata
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Limited session metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionMetadataResponse"
+        "404":
+          description: Session not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /sessions/{sessionId}/join:
+    post:
+      summary: Join an invite-only online session
+      operationId: joinSession
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinSessionRequest"
+      responses:
+        "200":
+          description: Session joined
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinSessionResponse"
+        "400":
+          description: Invalid join request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found or expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Session already full or not joinable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  parameters:
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 64
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, serviceTime]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        serviceTime:
+          type: string
+          format: date-time
+        version:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [code, message, retryable]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        retryable:
+          type: boolean
+        correlationId:
+          type: string
+    CreateSessionRequest:
+      type: object
+      properties:
+        targetScore:
+          type: integer
+          minimum: 1
+          maximum: 99
+          default: 11
+        winBy:
+          type: integer
+          minimum: 1
+          maximum: 10
+          default: 2
+        clientProtocolVersion:
+          type: string
+          default: "1.0"
+    CreateSessionResponse:
+      type: object
+      required:
+        - sessionId
+        - joinCode
+        - joinUrl
+        - playerId
+        - side
+        - playerToken
+        - websocketUrl
+        - expiresAt
+      properties:
+        sessionId:
+          type: string
+        joinCode:
+          type: string
+        joinUrl:
+          type: string
+          format: uri
+        playerId:
+          type: string
+        side:
+          $ref: "#/components/schemas/PlayerSide"
+        playerToken:
+          type: string
+          description: Secret capability token. Must not be logged.
+        websocketUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+    JoinSessionRequest:
+      type: object
+      required: [joinCode, clientProtocolVersion]
+      properties:
+        joinCode:
+          type: string
+        clientProtocolVersion:
+          type: string
+          default: "1.0"
+    JoinSessionResponse:
+      type: object
+      required:
+        - sessionId
+        - playerId
+        - side
+        - playerToken
+        - websocketUrl
+        - sessionState
+      properties:
+        sessionId:
+          type: string
+        playerId:
+          type: string
+        side:
+          $ref: "#/components/schemas/PlayerSide"
+        playerToken:
+          type: string
+          description: Secret capability token. Must not be logged.
+        websocketUrl:
+          type: string
+          format: uri
+        sessionState:
+          $ref: "#/components/schemas/SessionMetadataResponse"
+    SessionMetadataResponse:
+      type: object
+      required: [sessionId, status, mode, playerCount, capacity, expiresAt]
+      properties:
+        sessionId:
+          type: string
+        status:
+          $ref: "#/components/schemas/MatchStatus"
+        mode:
+          type: string
+          enum: [online_two_player]
+        playerCount:
+          type: integer
+          minimum: 0
+          maximum: 2
+        capacity:
+          type: integer
+          enum: [2]
+        expiresAt:
+          type: string
+          format: date-time
+    PlayerSide:
+      type: string
+      enum: [left, right]
+    MatchStatus:
+      type: string
+      enum:
+        - waiting
+        - serving
+        - in_play
+        - paused
+        - point_scored
+        - reconnecting
+        - match_ended
+        - restarted

@@ -1,0 +1,43 @@
+{
+  "name": "pingpong",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write .",
+    "typecheck": "tsc -b packages/contracts packages/game-core apps/realtime apps/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "smoke:aks": "tsx scripts/smoke/aks-smoke.ts",
+    "smoke:websocket": "tsx scripts/smoke/aks-smoke.ts --websocket-only",
+    "perf:browser": "tsx scripts/perf/browser-performance.ts",
+    "perf:ws": "tsx scripts/perf/ws-load.ts",
+    "security:realtime": "tsx scripts/security/realtime-abuse.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@playwright/test": "^1.44.0",
+    "@types/node": "^20.12.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/ws": "^8.5.10",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "prettier": "^3.2.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.15.0",
+    "vite": "^5.2.0",
+    "vitest": "^1.5.0"
+  }
+}

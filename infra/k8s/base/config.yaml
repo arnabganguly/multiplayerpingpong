@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pingpong-config
+  namespace: pingpong
+data:
+  APP_ENV: dev
+  PUBLIC_BASE_URL: https://pingpong.example.com
+  PUBLIC_REALTIME_URL: wss://pingpong.example.com/ws
+  ALLOWED_ORIGINS: https://pingpong.example.com
+  SESSION_TTL_SECONDS: "900"
+  RECONNECT_GRACE_SECONDS: "30"
+  DEFAULT_TARGET_SCORE: "11"
+  MAX_BALL_SPEED: "2"
+  ONLINE_TICK_RATE: "30"
+  MAX_SESSIONS_PER_BACKEND: "100"
+  LOG_LEVEL: info
+  METRICS_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""

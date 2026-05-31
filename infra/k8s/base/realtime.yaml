@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pingpong-realtime
+  namespace: pingpong
+  labels:
+    app.kubernetes.io/name: pingpong-realtime
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pingpong-realtime
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pingpong-realtime
+    spec:
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: realtime
+          image: pingpong-realtime:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: pingpong-config
+          env:
+            - name: SESSION_TOKEN_SIGNING_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pingpong-secrets
+                  key: SESSION_TOKEN_SIGNING_SECRET
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: 750m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health/ready
+              port: http
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health/live
+              port: http
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pingpong-realtime
+  namespace: pingpong
+spec:
+  selector:
+    app.kubernetes.io/name: pingpong-realtime
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

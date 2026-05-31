@@ -1,0 +1,5 @@
+strict: true
+ignoreMissingSchemas: true
+summary: true
+schemaLocations:
+  - default

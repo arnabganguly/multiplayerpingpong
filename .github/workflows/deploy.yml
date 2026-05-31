@@ -1,0 +1,106 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - 001-multiplayer-ping-pong
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        required: true
+        default: dev
+        options:
+          - dev
+          - staging
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  build-and-deploy-dev:
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az acr login --name ${{ vars.ACR_NAME }}
+      - run: docker build -f apps/web/Dockerfile -t ${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} .
+      - run: docker build -f apps/realtime/Dockerfile -t ${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG} .
+      - run: docker push ${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG}
+      - run: docker push ${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_NAME }}
+      - uses: imranismail/setup-kustomize@v2
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+        working-directory: infra/k8s/overlays/dev
+      - run: kubectl apply -k infra/k8s/overlays/dev
+      - run: kubectl rollout status deploy/pingpong-web -n pingpong
+      - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
+      - run: npm run smoke:aks
+
+  promote-staging:
+    needs: build-and-deploy-dev
+    runs-on: ubuntu-latest
+    environment: staging
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment != 'dev'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_NAME }}
+      - uses: imranismail/setup-kustomize@v2
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+        working-directory: infra/k8s/overlays/staging
+      - run: kubectl apply -k infra/k8s/overlays/staging
+      - run: kubectl rollout status deploy/pingpong-web -n pingpong
+      - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
+
+  promote-prod:
+    needs: promote-staging
+    runs-on: ubuntu-latest
+    environment: prod
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/aks-set-context@v4
+        with:
+          resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
+          cluster-name: ${{ vars.AKS_NAME }}
+      - uses: imranismail/setup-kustomize@v2
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+        working-directory: infra/k8s/overlays/prod
+      - run: kubectl apply -k infra/k8s/overlays/prod
+      - run: kubectl rollout status deploy/pingpong-web -n pingpong
+      - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
