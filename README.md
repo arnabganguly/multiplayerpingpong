@@ -17,7 +17,13 @@ In a second terminal:
 npm run dev --workspace @pingpong/web
 ```
 
-Or use the local helper script to install dependencies and start both services:
+In a third terminal, start the load simulator API:
+
+```bash
+SIMULATION_ADMIN_TOKEN=local-admin-token npm run dev:simulator
+```
+
+Or use the local helper script to install dependencies and start all services:
 
 ```bash
 npm run dev:local
@@ -28,6 +34,8 @@ Expected local URLs:
 - Frontend: `http://localhost:5173`
 - Backend HTTP: `http://localhost:8080/api`
 - Backend WebSocket: `ws://localhost:8080/ws`
+- Simulator API: `http://localhost:8090/api/simulator`
+- Admin UI: `http://localhost:5173`, then `Admin` → `Load Testing`
 
 ## Quality Checks
 
@@ -64,16 +72,32 @@ METRICS_ENABLED=true
 SESSION_TOKEN_SIGNING_SECRET=local-dev-secret
 ```
 
+Load simulator:
+
+```text
+APP_ENV=local
+PORT=8090
+SIMULATION_ENABLED=true
+SIMULATION_ADMIN_TOKEN=local-admin-token
+SIMULATION_TARGET_BASE_URL=http://localhost:5173
+SIMULATION_TARGET_API_URL=http://localhost:8080/api
+SIMULATION_TARGET_REALTIME_URL=ws://localhost:8080/ws
+SIMULATION_MAX_VIRTUAL_PLAYERS=1000
+```
+
 ## Kubernetes Deployment Model
 
 The Kubernetes manifests run the frontend and backend as separate workloads:
 
 - `pingpong-web`: React/Vite static frontend served by nginx
 - `pingpong-realtime`: Fastify HTTP and WebSocket backend
+- `load-generator`: simulator API and WebSocket bot clients
 
-Ingress routes `/` to `pingpong-web`, and `/api` plus `/ws` to
-`pingpong-realtime`. The realtime backend is intentionally capped at one
-replica in v1 because online sessions are stored in pod memory.
+Ingress routes `/` to `pingpong-web`, `/api` plus `/ws` to
+`pingpong-realtime`, and `/api/simulator` plus `/admin/simulations` to
+`load-generator-api`. The realtime backend is intentionally capped at one
+replica in v1 because online sessions are stored in pod memory. The load
+generator is independently scalable with its own HPA.
 
 ## Deploy To AKS
 
@@ -118,6 +142,11 @@ az acr build \
   --registry "$PINGPONG_ACR_NAME" \
   --image pingpong-realtime:dev \
   --file apps/realtime/Dockerfile .
+
+az acr build \
+  --registry "$PINGPONG_ACR_NAME" \
+  --image load-generator:dev \
+  --file apps/simulator/Dockerfile .
 ```
 
 Install ingress-nginx:
@@ -140,6 +169,7 @@ kubectl create namespace pingpong --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n pingpong create secret generic pingpong-secrets \
   --from-literal=SESSION_TOKEN_SIGNING_SECRET="$(openssl rand -base64 32)" \
+  --from-literal=SIMULATION_ADMIN_TOKEN="$(openssl rand -base64 32)" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -k infra/k8s/overlays/dev
@@ -153,6 +183,9 @@ kubectl -n pingpong set image deploy/pingpong-web \
 
 kubectl -n pingpong set image deploy/pingpong-realtime \
   realtime="${ACR_LOGIN_SERVER}/pingpong-realtime:dev"
+
+kubectl -n pingpong set image deploy/load-generator \
+  load-generator="${ACR_LOGIN_SERVER}/load-generator:dev"
 ```
 
 Use the ingress public IP as a temporary HTTP host:
@@ -173,6 +206,12 @@ kubectl -n pingpong set env deploy/pingpong-realtime \
   PUBLIC_BASE_URL="http://${PINGPONG_HOST}" \
   PUBLIC_REALTIME_URL="ws://${PINGPONG_HOST}/ws" \
   ALLOWED_ORIGINS="http://${PINGPONG_HOST}"
+
+kubectl -n pingpong set env deploy/load-generator \
+  SIMULATION_ENABLED=true \
+  SIMULATION_TARGET_BASE_URL="http://${PINGPONG_HOST}" \
+  SIMULATION_TARGET_API_URL="http://${PINGPONG_HOST}/api" \
+  SIMULATION_TARGET_REALTIME_URL="ws://${PINGPONG_HOST}/ws"
 ```
 
 Verify and open the game:
@@ -180,9 +219,21 @@ Verify and open the game:
 ```bash
 kubectl -n pingpong rollout status deploy/pingpong-web
 kubectl -n pingpong rollout status deploy/pingpong-realtime
+kubectl -n pingpong rollout status deploy/load-generator
 kubectl -n pingpong get pods,svc,ingress
 
 echo "http://${PINGPONG_HOST}"
+```
+
+To validate the simulator after rollout:
+
+```bash
+export SIMULATOR_API_URL="http://${PINGPONG_HOST}/api/simulator"
+export SIMULATION_ADMIN_TOKEN=<token-used-in-pingpong-secrets>
+export SIMULATOR_BASE_URL="http://${PINGPONG_HOST}"
+npm run smoke:simulation
+npm run smoke:simulation:metrics
+kubectl -n pingpong get hpa load-generator
 ```
 
 ## Deploy To EKS
@@ -237,6 +288,13 @@ aws ecr create-repository \
   --repository-name pingpong-realtime \
   --region "$AWS_REGION"
 
+aws ecr describe-repositories \
+  --repository-names load-generator \
+  --region "$AWS_REGION" >/dev/null 2>&1 || \
+aws ecr create-repository \
+  --repository-name load-generator \
+  --region "$AWS_REGION"
+
 aws ecr get-login-password --region "$AWS_REGION" | \
   docker login --username AWS --password-stdin "$ECR_REGISTRY"
 
@@ -248,8 +306,13 @@ docker build \
   -t "${ECR_REGISTRY}/pingpong-realtime:dev" \
   -f apps/realtime/Dockerfile .
 
+docker build \
+  -t "${ECR_REGISTRY}/load-generator:dev" \
+  -f apps/simulator/Dockerfile .
+
 docker push "${ECR_REGISTRY}/pingpong-web:dev"
 docker push "${ECR_REGISTRY}/pingpong-realtime:dev"
+docker push "${ECR_REGISTRY}/load-generator:dev"
 ```
 
 Install ingress-nginx:
@@ -271,6 +334,7 @@ kubectl create namespace pingpong --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl -n pingpong create secret generic pingpong-secrets \
   --from-literal=SESSION_TOKEN_SIGNING_SECRET="$(openssl rand -base64 32)" \
+  --from-literal=SIMULATION_ADMIN_TOKEN="$(openssl rand -base64 32)" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 kubectl apply -k infra/k8s/overlays/dev
@@ -284,6 +348,9 @@ kubectl -n pingpong set image deploy/pingpong-web \
 
 kubectl -n pingpong set image deploy/pingpong-realtime \
   realtime="${ECR_REGISTRY}/pingpong-realtime:dev"
+
+kubectl -n pingpong set image deploy/load-generator \
+  load-generator="${ECR_REGISTRY}/load-generator:dev"
 ```
 
 Use the AWS load balancer hostname as the temporary HTTP host:
@@ -302,6 +369,12 @@ kubectl -n pingpong set env deploy/pingpong-realtime \
   PUBLIC_BASE_URL="http://${PINGPONG_HOST}" \
   PUBLIC_REALTIME_URL="ws://${PINGPONG_HOST}/ws" \
   ALLOWED_ORIGINS="http://${PINGPONG_HOST}"
+
+kubectl -n pingpong set env deploy/load-generator \
+  SIMULATION_ENABLED=true \
+  SIMULATION_TARGET_BASE_URL="http://${PINGPONG_HOST}" \
+  SIMULATION_TARGET_API_URL="http://${PINGPONG_HOST}/api" \
+  SIMULATION_TARGET_REALTIME_URL="ws://${PINGPONG_HOST}/ws"
 ```
 
 Verify and open the game:
@@ -309,6 +382,7 @@ Verify and open the game:
 ```bash
 kubectl -n pingpong rollout status deploy/pingpong-web
 kubectl -n pingpong rollout status deploy/pingpong-realtime
+kubectl -n pingpong rollout status deploy/load-generator
 kubectl -n pingpong get pods,svc,ingress
 
 echo "http://${PINGPONG_HOST}"

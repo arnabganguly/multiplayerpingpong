@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 001-multiplayer-ping-pong
   workflow_dispatch:
     inputs:
       environment:
@@ -45,18 +44,21 @@ jobs:
       - run: az acr login --name ${{ vars.ACR_NAME }}
       - run: docker build -f apps/web/Dockerfile -t ${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} .
       - run: docker build -f apps/realtime/Dockerfile -t ${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG} .
+      - run: docker build -f apps/simulator/Dockerfile -t ${{ vars.ACR_LOGIN_SERVER }}/load-generator:${IMAGE_TAG} .
       - run: docker push ${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG}
       - run: docker push ${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+      - run: docker push ${{ vars.ACR_LOGIN_SERVER }}/load-generator:${IMAGE_TAG}
       - uses: azure/aks-set-context@v4
         with:
           resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ vars.AKS_NAME }}
       - uses: imranismail/setup-kustomize@v2
-      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG} load-generator=${{ vars.ACR_LOGIN_SERVER }}/load-generator:${IMAGE_TAG}
         working-directory: infra/k8s/overlays/dev
       - run: kubectl apply -k infra/k8s/overlays/dev
       - run: kubectl rollout status deploy/pingpong-web -n pingpong
       - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
+      - run: kubectl rollout status deploy/load-generator -n pingpong
       - run: npm run smoke:aks
 
   promote-staging:
@@ -76,11 +78,12 @@ jobs:
           resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ vars.AKS_NAME }}
       - uses: imranismail/setup-kustomize@v2
-      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG} load-generator=${{ vars.ACR_LOGIN_SERVER }}/load-generator:${IMAGE_TAG}
         working-directory: infra/k8s/overlays/staging
       - run: kubectl apply -k infra/k8s/overlays/staging
       - run: kubectl rollout status deploy/pingpong-web -n pingpong
       - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
+      - run: kubectl rollout status deploy/load-generator -n pingpong
 
   promote-prod:
     needs: promote-staging
@@ -99,8 +102,9 @@ jobs:
           resource-group: ${{ vars.AKS_RESOURCE_GROUP }}
           cluster-name: ${{ vars.AKS_NAME }}
       - uses: imranismail/setup-kustomize@v2
-      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG}
+      - run: kustomize edit set image pingpong-web=${{ vars.ACR_LOGIN_SERVER }}/pingpong-web:${IMAGE_TAG} pingpong-realtime=${{ vars.ACR_LOGIN_SERVER }}/pingpong-realtime:${IMAGE_TAG} load-generator=${{ vars.ACR_LOGIN_SERVER }}/load-generator:${IMAGE_TAG}
         working-directory: infra/k8s/overlays/prod
       - run: kubectl apply -k infra/k8s/overlays/prod
       - run: kubectl rollout status deploy/pingpong-web -n pingpong
       - run: kubectl rollout status deploy/pingpong-realtime -n pingpong
+      - run: kubectl rollout status deploy/load-generator -n pingpong

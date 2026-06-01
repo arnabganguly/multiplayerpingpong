@@ -3,5 +3,7 @@ resources:
   - config.yaml
   - web.yaml
   - realtime.yaml
+  - simulator.yaml
   - ingress.yaml
   - hpa.yaml
+  - simulator-hpa.yaml

@@ -22,7 +22,14 @@ export default defineConfig({
       timeout: 20_000
     },
     {
-      command: "npm run dev --workspace apps/web",
+      command:
+        "APP_ENV=local PORT=8090 SIMULATION_ENABLED=true SIMULATION_ADMIN_TOKEN=local-admin-token SIMULATION_TARGET_BASE_URL=http://127.0.0.1:5173 SIMULATION_TARGET_API_URL=http://127.0.0.1:8080/api SIMULATION_TARGET_REALTIME_URL=ws://127.0.0.1:8080/ws npm run dev --workspace apps/simulator",
+      url: "http://127.0.0.1:8090/api/health/live",
+      reuseExistingServer: true,
+      timeout: 20_000
+    },
+    {
+      command: "BACKEND_PORT=8080 SIMULATOR_PORT=8090 npm run dev --workspace apps/web",
       url: "http://127.0.0.1:5173",
       reuseExistingServer: true,
       timeout: 20_000

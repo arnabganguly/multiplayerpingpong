@@ -7,6 +7,7 @@ data:
   APP_ENV: dev
   PUBLIC_BASE_URL: https://pingpong.example.com
   PUBLIC_REALTIME_URL: wss://pingpong.example.com/ws
+  PUBLIC_SIMULATOR_API_URL: https://pingpong.example.com/api/simulator
   ALLOWED_ORIGINS: https://pingpong.example.com
   SESSION_TTL_SECONDS: "900"
   RECONNECT_GRACE_SECONDS: "30"
@@ -17,3 +18,12 @@ data:
   LOG_LEVEL: info
   METRICS_ENABLED: "true"
   OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  SIMULATION_ENABLED: "false"
+  SIMULATION_TARGET_BASE_URL: https://pingpong.example.com
+  SIMULATION_TARGET_API_URL: https://pingpong.example.com/api
+  SIMULATION_TARGET_REALTIME_URL: wss://pingpong.example.com/ws
+  SIMULATION_MAX_VIRTUAL_PLAYERS: "1000"
+  SIMULATION_MAX_DURATION_SECONDS: "1800"
+  SIMULATION_MAX_UPDATE_FREQUENCY_HZ: "20"
+  SIMULATION_STARTUP_TIMEOUT_MS: "15000"
+  SIMULATION_SHUTDOWN_GRACE_MS: "60000"
