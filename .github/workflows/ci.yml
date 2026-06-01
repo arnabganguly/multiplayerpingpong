@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - main
-      - 001-multiplayer-ping-pong
-      - 002-virtual-player-simulation
 
 jobs:
   quality:
@@ -26,4 +24,8 @@ jobs:
       - run: docker build -f apps/web/Dockerfile -t pingpong-web:ci .
       - run: docker build -f apps/realtime/Dockerfile -t pingpong-realtime:ci .
       - run: docker build -f apps/simulator/Dockerfile -t load-generator:ci .
-      - run: npx kubeconform -summary -ignore-missing-schemas infra/k8s/base/*.yaml
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+      - run: kubeconform -summary -ignore-missing-schemas infra/k8s/base/*.yaml

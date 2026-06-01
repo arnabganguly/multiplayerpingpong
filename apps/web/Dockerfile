@@ -2,6 +2,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 COPY apps/web/package.json apps/web/package.json
+COPY apps/realtime/package.json apps/realtime/package.json
+COPY apps/simulator/package.json apps/simulator/package.json
 COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/game-core/package.json packages/game-core/package.json
 RUN npm ci

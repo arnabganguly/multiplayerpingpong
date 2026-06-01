@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-      - 001-multiplayer-ping-pong
-      - 002-virtual-player-simulation
   workflow_dispatch:
     inputs:
       environment:
