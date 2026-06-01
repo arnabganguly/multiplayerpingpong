@@ -8,12 +8,26 @@ images:
   - name: pingpong-realtime
     newName: pingpong-realtime
     newTag: dev
-configMapGenerator:
-  - name: pingpong-config
-    namespace: pingpong
-    behavior: merge
-    literals:
-      - APP_ENV=dev
-      - PUBLIC_BASE_URL=https://dev.pingpong.example.com
-      - PUBLIC_REALTIME_URL=wss://dev.pingpong.example.com/ws
-      - ALLOWED_ORIGINS=https://dev.pingpong.example.com
+  - name: load-generator
+    newName: load-generator
+    newTag: dev
+patches:
+  - target:
+      kind: ConfigMap
+      name: pingpong-config
+    patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: pingpong-config
+        namespace: pingpong
+      data:
+        APP_ENV: dev
+        PUBLIC_BASE_URL: https://dev.pingpong.example.com
+        PUBLIC_REALTIME_URL: wss://dev.pingpong.example.com/ws
+        PUBLIC_SIMULATOR_API_URL: https://dev.pingpong.example.com/api/simulator
+        ALLOWED_ORIGINS: https://dev.pingpong.example.com
+        SIMULATION_ENABLED: "true"
+        SIMULATION_TARGET_BASE_URL: https://dev.pingpong.example.com
+        SIMULATION_TARGET_API_URL: https://dev.pingpong.example.com/api
+        SIMULATION_TARGET_REALTIME_URL: wss://dev.pingpong.example.com/ws

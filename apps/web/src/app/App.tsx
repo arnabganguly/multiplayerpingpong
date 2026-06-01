@@ -6,8 +6,9 @@ import { SinglePlayerGame } from "../game/SinglePlayerGame";
 import { LocalTwoPlayerGame } from "../game/LocalTwoPlayerGame";
 import { OnlineCredentials, OnlineLobby } from "../game/OnlineLobby";
 import { OnlineGame } from "../game/OnlineGame";
+import { SimulationControlPanel } from "../admin/SimulationControlPanel";
 
-type Mode = "menu" | "single" | "local" | "online";
+type Mode = "menu" | "single" | "local" | "online" | "admin";
 
 export function App() {
   const [mode, setMode] = useState<Mode>("menu");
@@ -24,7 +25,9 @@ export function App() {
           ? "Local two-player match selected."
           : nextMode === "online"
             ? "Online lobby selected."
-            : "Choose a match mode."
+            : nextMode === "admin"
+              ? "Admin load testing selected."
+              : "Choose a match mode."
     );
   };
 
@@ -41,6 +44,14 @@ export function App() {
       return (
         <main className="app-shell game-app">
           <LocalTwoPlayerGame onExit={() => setMode("menu")} />
+        </main>
+      );
+    }
+
+    if (mode === "admin") {
+      return (
+        <main className="app-shell">
+          <SimulationControlPanel config={config} onExit={() => chooseMode("menu")} />
         </main>
       );
     }
@@ -94,6 +105,10 @@ export function App() {
           <button className="mode-button" onClick={() => chooseMode("online")}>
             <strong>Online Two-Player</strong>
             <span>Create or join an invite-only room.</span>
+          </button>
+          <button className="mode-button" onClick={() => chooseMode("admin")}>
+            <strong>Admin</strong>
+            <span>Load Testing</span>
           </button>
         </div>
       </section>

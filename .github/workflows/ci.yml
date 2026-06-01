@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - 001-multiplayer-ping-pong
+      - 002-virtual-player-simulation
 
 jobs:
   quality:
@@ -24,4 +25,5 @@ jobs:
       - run: npm run build
       - run: docker build -f apps/web/Dockerfile -t pingpong-web:ci .
       - run: docker build -f apps/realtime/Dockerfile -t pingpong-realtime:ci .
+      - run: docker build -f apps/simulator/Dockerfile -t load-generator:ci .
       - run: npx kubeconform -summary -ignore-missing-schemas infra/k8s/base/*.yaml

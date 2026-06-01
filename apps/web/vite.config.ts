@@ -2,6 +2,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const backendPort = process.env.BACKEND_PORT ?? "8080";
+const simulatorPort = process.env.SIMULATOR_PORT ?? "8090";
 
 export default defineConfig({
   plugins: [react()],
@@ -9,6 +10,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
+      "/api/simulator": {
+        target: `http://localhost:${simulatorPort}`,
+        changeOrigin: true
+      },
       "/api": {
         target: `http://localhost:${backendPort}`,
         changeOrigin: true

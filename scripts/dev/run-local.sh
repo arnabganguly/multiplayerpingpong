@@ -4,7 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 FRONTEND_PORT="${FRONTEND_PORT:-5173}"
 BACKEND_PORT="${BACKEND_PORT:-8080}"
+SIMULATOR_PORT="${SIMULATOR_PORT:-8090}"
 SESSION_TOKEN_SIGNING_SECRET="${SESSION_TOKEN_SIGNING_SECRET:-local-dev-secret}"
+SIMULATION_ADMIN_TOKEN="${SIMULATION_ADMIN_TOKEN:-local-admin-token}"
 INSTALL_DEPS=true
 
 usage() {
@@ -20,7 +22,9 @@ Options:
 Environment overrides:
   FRONTEND_PORT                  Frontend Vite port. Default: 5173
   BACKEND_PORT                   Backend API/WebSocket port. Default: 8080
+  SIMULATOR_PORT                 Simulator API port. Default: 8090
   SESSION_TOKEN_SIGNING_SECRET   Local backend token signing secret. Default: local-dev-secret
+  SIMULATION_ADMIN_TOKEN         Local admin token for load testing. Default: local-admin-token
 EOF
 }
 
@@ -77,6 +81,10 @@ cleanup() {
     kill "$API_PID" >/dev/null 2>&1 || true
   fi
 
+  if [[ -n "${SIMULATOR_PID:-}" ]] && kill -0 "$SIMULATOR_PID" >/dev/null 2>&1; then
+    kill "$SIMULATOR_PID" >/dev/null 2>&1 || true
+  fi
+
   wait >/dev/null 2>&1 || true
   exit "$exit_code"
 }
@@ -105,8 +113,24 @@ API_PID=$!
 
 wait_for_url "Realtime backend" "http://localhost:${BACKEND_PORT}/api/health/ready"
 
+echo "Starting load simulator on http://localhost:${SIMULATOR_PORT}..."
+APP_ENV=local \
+PORT="$SIMULATOR_PORT" \
+SIMULATION_ENABLED=true \
+SIMULATION_ADMIN_TOKEN="$SIMULATION_ADMIN_TOKEN" \
+SIMULATION_TARGET_BASE_URL="http://localhost:${FRONTEND_PORT}" \
+SIMULATION_TARGET_API_URL="http://localhost:${BACKEND_PORT}/api" \
+SIMULATION_TARGET_REALTIME_URL="ws://localhost:${BACKEND_PORT}/ws" \
+LOG_LEVEL="${LOG_LEVEL:-debug}" \
+npm run dev --workspace @pingpong/simulator &
+SIMULATOR_PID=$!
+
+wait_for_url "Load simulator" "http://localhost:${SIMULATOR_PORT}/api/health/ready"
+
 echo "Starting frontend on http://localhost:${FRONTEND_PORT}..."
-BACKEND_PORT="$BACKEND_PORT" npm run dev --workspace @pingpong/web -- --port "$FRONTEND_PORT" &
+BACKEND_PORT="$BACKEND_PORT" \
+SIMULATOR_PORT="$SIMULATOR_PORT" \
+npm run dev --workspace @pingpong/web -- --port "$FRONTEND_PORT" &
 WEB_PID=$!
 
 wait_for_url "Frontend" "http://localhost:${FRONTEND_PORT}/"
@@ -118,6 +142,8 @@ Local Ping Pong is running.
 Frontend:          http://localhost:${FRONTEND_PORT}
 Backend HTTP:      http://localhost:${BACKEND_PORT}/api
 Backend WebSocket: ws://localhost:${BACKEND_PORT}/ws
+Simulator API:     http://localhost:${SIMULATOR_PORT}/api/simulator
+Admin token:       ${SIMULATION_ADMIN_TOKEN}
 
 Try online multiplayer by opening two browser tabs:
 1. Create a session in one tab.

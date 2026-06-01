@@ -4,7 +4,12 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["packages/**/*.test.ts", "apps/realtime/**/*.test.ts", "apps/web/**/*.test.ts"],
+    include: [
+      "packages/**/*.test.ts",
+      "apps/realtime/**/*.test.ts",
+      "apps/simulator/**/*.test.ts",
+      "apps/web/**/*.test.ts"
+    ],
     coverage: {
       reporter: ["text", "lcov"]
     }

@@ -17,6 +17,20 @@ spec:
     - host: pingpong.example.com
       http:
         paths:
+          - path: /api/simulator
+            pathType: Prefix
+            backend:
+              service:
+                name: load-generator-api
+                port:
+                  name: http
+          - path: /admin/simulations
+            pathType: Prefix
+            backend:
+              service:
+                name: load-generator-api
+                port:
+                  name: http
           - path: /api
             pathType: Prefix
             backend:

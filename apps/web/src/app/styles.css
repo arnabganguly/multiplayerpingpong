@@ -148,12 +148,17 @@ h1 {
   font-weight: 700;
 }
 
-.join-form input {
+.join-form input,
+.admin-access input,
+.simulation-form input,
+.simulation-form select {
   min-height: 44px;
   border: 1px solid #8bb174;
   border-radius: 8px;
   padding: 8px 10px;
   font: inherit;
+  background: #f5f0e8;
+  color: #17251d;
 }
 
 .error-text {
@@ -163,6 +168,115 @@ h1 {
 
 .game-app {
   padding: clamp(10px, 2vw, 20px);
+}
+
+.admin-panel {
+  display: grid;
+  gap: 24px;
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-access,
+.simulation-form,
+.simulation-dashboard {
+  display: grid;
+  gap: 16px;
+  align-self: start;
+  padding: 18px;
+  border: 1px solid rgba(139, 177, 116, 0.55);
+  border-radius: 8px;
+  background: rgba(245, 240, 232, 0.06);
+}
+
+.admin-access {
+  width: min(460px, 100%);
+}
+
+.admin-access label,
+.simulation-form label {
+  display: grid;
+  gap: 6px;
+  color: #d7e4c2;
+  font-weight: 800;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 440px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dashboard-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard-heading h2,
+.recent-runs h3 {
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.metric-tile {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(139, 177, 116, 0.45);
+  border-radius: 8px;
+  background: rgba(23, 37, 29, 0.65);
+}
+
+.metric-tile span,
+.run-row span,
+.run-row code {
+  color: #d7e4c2;
+}
+
+.metric-tile strong {
+  color: #f7c548;
+  font-size: 1.6rem;
+}
+
+.recent-runs,
+.run-list {
+  display: grid;
+  gap: 10px;
+}
+
+.run-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.8fr) minmax(110px, 1fr) minmax(90px, 0.8fr) minmax(0, 1.4fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px;
+  border: 1px solid rgba(139, 177, 116, 0.3);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
 }
 
 .game-screen {
@@ -265,6 +379,16 @@ h1 {
 }
 
 @media (pointer: coarse), (max-width: 760px) {
+  .admin-grid,
+  .form-grid,
+  .run-row {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    align-items: flex-start;
+  }
+
   .touch-controls {
     display: grid;
     grid-template-columns: 1fr 1fr;
